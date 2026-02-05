@@ -5,10 +5,9 @@ using UnityEngine;
 
 public class GroundedState : PlayerState
 {
-   
     public override void Enter(Player stateController)
     {
-
+        base.Enter(stateController);
     }
 
     public override void Exit(Player stateController)

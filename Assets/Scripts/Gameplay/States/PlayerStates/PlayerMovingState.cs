@@ -6,11 +6,11 @@ using UnityEngine.EventSystems;
 public class PlayerMovingState : GroundedState
 {
     TimerUtil movingStateTimer = new TimerUtil(0.1f, true);
-    private int oldAnimation = -1;
+    Vector2 moveDir;
+
     public override void Enter(Player stateController)
     {
         base.Enter(stateController);
-        oldAnimation = -1;
         Debug.Log("MOVING state");
     }
 
@@ -23,23 +23,13 @@ public class PlayerMovingState : GroundedState
     public override void FixedUpdate(Player stateController)
     {
         base.FixedUpdate(stateController);
+        stateController.SetInputMoveDir(stateController.GetInputMoveDir());
         stateController.Movement();
 
     }
 
-    //TODO add a timer to cooldown for switching classes
-
-    public override void Update(Player stateController)
+    public void movementAnimation(Player stateController)
     {
-       Animator animator = stateController.GetAnimator();
-        base.Update(stateController);
-        Vector2 moveDir = stateController.GetInputMoveDir();//Direction the player is moving in
-
-        //Switching player movement Animations
-
-        SpriteRenderer spriteRenderer = stateController.GetComponent<SpriteRenderer>();
-        int currentAnimation = -1;
-
         if (moveDir.x > 0.01f)
         {
             spriteRenderer.flipX = false;
@@ -62,17 +52,33 @@ public class PlayerMovingState : GroundedState
 
 
         //if the animation is diffrent from the last one we switch and save the new one as old animation
-        if (currentAnimation != oldAnimation && currentAnimation!=-1)
+        if (currentAnimation != oldAnimation && currentAnimation != -1)
         {
             oldAnimation = currentAnimation;
-            animator.CrossFade(currentAnimation, 0.2f);
+            playerAnimator.CrossFade(currentAnimation, 0.2f);
         }
+    }
+   
+    public override void Update(Player stateController)
+    {
+     
+        base.Update(stateController);
+        moveDir = stateController.GetInputMoveDir();//Direction the player is moving in
 
-        //If player has stopped moving and a small period has passed he goes into idle
+        //Switching player movement Animations
+
+        SpriteRenderer spriteRenderer = stateController.GetComponent<SpriteRenderer>();
+   
+        //From Moving To idle
         bool hasStopped = moveDir == Vector2.zero;
-        if (hasStopped&&movingStateTimer.UpdateTimer(Time.deltaTime))
+        if (hasStopped && movingStateTimer.UpdateTimer(Time.deltaTime))
         {
             stateController.SwitchState(stateController.playerIdleState, stateController);
         }
+
+        movementAnimation(stateController);
+
+
+
     }
 }

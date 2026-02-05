@@ -1,16 +1,20 @@
 using NUnit.Framework;
 using System.Collections.Generic;
+using UnityEditor.Rendering.LookDev;
 using UnityEngine;
 
 public class PlayerIdleState : GroundedState
 {
-    TimerUtil idleStateTimer = new TimerUtil(0.01f, true);
-    private int oldAnimation=-1;
+    TimerUtil idleStateTimer = new TimerUtil(0.01f, true);//used to make a clean transition between states
+    Rigidbody2D rb;
+    Vector2 lookDir;
     public override void Enter(Player stateController)
     {
-        //base.Enter(stateController);
+        rb = stateController.GetComponent<Rigidbody2D>();
+        base.Enter(stateController);
+        
         Debug.Log("idleState");
-        oldAnimation = -1;
+
     }
 
     public override void Exit(Player stateController)
@@ -22,18 +26,10 @@ public class PlayerIdleState : GroundedState
     public override void FixedUpdate(Player stateController)
     {
        base.FixedUpdate(stateController);
-       Rigidbody2D rb= stateController.GetComponent<Rigidbody2D>();
        rb.linearVelocity = Vector2.zero;
     }
-    
-    public override void Update(Player stateController)
+    public void idleAnimationLogic(Player stateController)
     {
-        Vector2 lookDir = stateController.GetLookDir();//Direction the player is looking at
-       
-        base.Update(stateController);
-        Animator animator = stateController.GetAnimator();
-        int currentAnimation = -1;
-                              
         if (lookDir.x > 0.01f)
         {
             currentAnimation = stateController.horizontalIdle;
@@ -59,15 +55,27 @@ public class PlayerIdleState : GroundedState
         if (currentAnimation != oldAnimation)
         {
             oldAnimation = currentAnimation;
-            animator.CrossFade(currentAnimation, 0.1f);
+            playerAnimator.CrossFade(currentAnimation, 0.1f);
         }
-    
+    }
+    public override void Update(Player stateController)
+    {
+        lookDir = stateController.GetLookDir();//Direction the player is looking at
+     
+ 
+        base.Update(stateController);
 
+        //Transition to movmentState
         bool hasStartedMoving = stateController.GetInputMoveDir() != Vector2.zero;
         if (hasStartedMoving && idleStateTimer.UpdateTimer(Time.deltaTime))
         {
-            stateController.SwitchState(stateController.playerMovingState,stateController);
+            stateController.SwitchState(stateController.playerMovingState, stateController);
         }
+
+        //Animation logic      
+        idleAnimationLogic(stateController);
+
+
     }
 
 }

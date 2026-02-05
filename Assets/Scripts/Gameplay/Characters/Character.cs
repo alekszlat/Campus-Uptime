@@ -20,8 +20,6 @@ public abstract class Character<T> : MonoBehaviour
         spriteRenderer = GetComponent<SpriteRenderer>();
         lookDir = Vector2.left;
         animator = GetComponent<Animator>();
-
-       
     }
   
     public virtual void Update()
@@ -34,11 +32,11 @@ public abstract class Character<T> : MonoBehaviour
     
     public void SwitchState(State<T> state, T stateController)
     {
-        state.Exit(stateController);
+        currentState.Exit(stateController);
         currentState = state;
-        state.Enter(stateController);
+        currentState.Enter(stateController);
     }
-    public void SetState(State<T> state)
+    public void SetInitialState(State<T> state)
     {
         currentState = state;
     }
@@ -46,7 +44,8 @@ public abstract class Character<T> : MonoBehaviour
     //These areused to Switch the current state witouth breaking capsulation
     public void UpdateCurrentState(T stateController)
     {
-        currentState.Update(stateController);
+        currentState.Update(stateController); 
+       
     }
     public void EnterCurrentState(T stateController)
     {
@@ -56,9 +55,9 @@ public abstract class Character<T> : MonoBehaviour
     {
         currentState.FixedUpdate(stateController);
     }
-    public void ExitUpdateCurrentState(T stateController)
+    public void ExitCurrentState(T stateController)
     {
-        currentState.FixedUpdate(stateController);
+        currentState.Exit(stateController);
     }
 
     //Helper functions

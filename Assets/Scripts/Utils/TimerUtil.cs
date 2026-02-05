@@ -13,7 +13,8 @@ public class TimerUtil
         this.duration = duration;
         this.isRepeated = isRepeated;
     }
-
+    
+    //Updates time and tells us when time is ready
     public bool UpdateTimer(float currentTime)
     {
         this.currentTime += currentTime;
@@ -23,7 +24,7 @@ public class TimerUtil
     {
         bool isReady = currentTime >= duration;
         
-        if (isRepeated&&isReady) { ResetTimer(); };
+        if (isRepeated && isReady) { ResetTimer(); };
         return isReady;
     }
     public void ResetTimer()

@@ -5,13 +5,13 @@ using UnityEngine;
 public class Player : Character<Player>
 {
     //Monobehavior class that keeps track of the player input
-    public PlayerInputServece playerInputHandler;
-
+    private PlayerInputServece playerInputHandler;//we put the playerInputService in the inspector and access it from here
+    
     //Diffrent player states
     public PlayerIdleState playerIdleState;
     public PlayerMovingState playerMovingState;
     public PlayerDialogueState playerDialogueState;
-
+    public Vector2 rawInput;
     //Animation
     public readonly int horizontalMovement = Animator.StringToHash("MoveHorizontal");
     public readonly int UpMovement = Animator.StringToHash("MoveUp");
@@ -19,25 +19,21 @@ public class Player : Character<Player>
     public readonly int horizontalIdle = Animator.StringToHash("IdleHorizontal");
     public readonly int UpIdle = Animator.StringToHash("IdleUp");
     public readonly int DownIdle = Animator.StringToHash("IdleDown");
+
+    //Parameters
+    private int playerSpeed = 6;
   
     public override void Start()
     {
         base.Start();
-       
-   
+
         playerIdleState = new PlayerIdleState();
         playerMovingState = new PlayerMovingState();
         playerDialogueState = new PlayerDialogueState();
-
-        SetSpeed(6);
-
+        SetSpeed(playerSpeed);
         playerInputHandler = GetComponent<PlayerInputServece>();
-
-        SetState(playerIdleState);
-
-       
-     
-
+        SetInitialState(playerIdleState);
+        EnterCurrentState(this);
     }
     private void FixedUpdate()
     {
@@ -47,9 +43,7 @@ public class Player : Character<Player>
     public override void Update()
     {
         base.Update();
-
         SetInputMoveDir(playerInputHandler.GetDirection());
-
         UpdateCurrentState(this);
   
     }
