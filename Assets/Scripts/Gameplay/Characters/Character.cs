@@ -1,7 +1,11 @@
+/// Created ?
+/// Updated: 07/02/2026
+/// Added initialization check for edge cases bug when Start runs after Update.
 using NUnit.Framework;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using UnityEngine;
-
 
 public abstract class Character<T> : MonoBehaviour
 {
@@ -12,6 +16,7 @@ public abstract class Character<T> : MonoBehaviour
     private State<T> currentState;//needs a template for each class that extends character: state for Player,for passiveNPC,for agressiveNpc
     private Animator animator;
     private SpriteRenderer spriteRenderer;
+    private bool isInitialized = false;
   
     //is virtual so we can intialize rb
     public virtual void Start()
@@ -38,25 +43,41 @@ public abstract class Character<T> : MonoBehaviour
     }
     public void SetInitialState(State<T> state)
     {
-        currentState = state;
+        if (!isInitialized)
+        {
+            currentState = state;
+            isInitialized = true;
+        }
     }
-   
+
+    [Conditional("UNITY_EDITOR")]
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void EnsureStateInitialization()
+    {
+        if (!isInitialized) {
+            UnityEngine.Debug.LogWarning($"State not set on {gameObject.name}, skipping Update()");
+            return;
+        }
+    }
     //These areused to Switch the current state witouth breaking capsulation
     public void UpdateCurrentState(T stateController)
     {
+        EnsureStateInitialization();
         currentState.Update(stateController); 
-       
     }
     public void EnterCurrentState(T stateController)
     {
+        EnsureStateInitialization();
         currentState.Enter(stateController);
     }
     public void FixedUpdateCurrentState(T stateController)
     {
+        EnsureStateInitialization();
         currentState.FixedUpdate(stateController);
     }
     public void ExitCurrentState(T stateController)
     {
+        EnsureStateInitialization();
         currentState.Exit(stateController);
     }
 

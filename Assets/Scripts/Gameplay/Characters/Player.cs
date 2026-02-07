@@ -5,7 +5,7 @@ using UnityEngine;
 public class Player : Character<Player>
 {
     //Monobehavior class that keeps track of the player input
-    private PlayerInputServece playerInputHandler;//we put the playerInputService in the inspector and access it from here
+    private PlayerInputService playerInputHandler;//we put the playerInputService in the inspector and access it from here
     
     //Diffrent player states
     public PlayerIdleState playerIdleState;
@@ -31,7 +31,7 @@ public class Player : Character<Player>
         playerMovingState = new PlayerMovingState();
         playerDialogueState = new PlayerDialogueState();
         SetSpeed(playerSpeed);
-        playerInputHandler = GetComponent<PlayerInputServece>();
+        playerInputHandler = GetComponent<PlayerInputService>();
         SetInitialState(playerIdleState);
         EnterCurrentState(this);
     }

@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-public class PlayerInputServece : MonoBehaviour
+public class PlayerInputService : MonoBehaviour
 {
     private PlayerInput playerInput;
     private Vector2 moveDir;
