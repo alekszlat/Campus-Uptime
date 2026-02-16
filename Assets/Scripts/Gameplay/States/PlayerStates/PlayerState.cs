@@ -23,4 +23,8 @@ public abstract class PlayerState : State<Player>
    
     public abstract void Update(Player stateController);
    
+    public virtual void transitionState(Player stateController)
+    {
+
+    }
 }

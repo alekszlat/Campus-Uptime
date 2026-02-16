@@ -5,10 +5,11 @@
  * Created: 11/10/2025
  * Updated: 11/10/2025
  */
-
+using System.Collections.Generic;
 using UnityEngine;
 using Game.Core.EventSystem;
 using Game.Core.TimeSystem;
+using NUnit.Framework;
 
 namespace Game.Core.GameSystem
 {
@@ -24,6 +25,44 @@ namespace Game.Core.GameSystem
         public int DayNumber { get; set; }
         public int TasksCompleted { get; set; }
     }
+    public class OnDialogueIndxChangedEvent : GameEvent
+    {
+        public int NewDialogueIndx { get; set; }
+    }
+    public class OnDialogueBoxInfoEvent : GameEvent
+    {
+        public string name;
+        public Sprite portrait;
+        public string fullDialogueBoxText { get; set; }
+    }
+    public class OnNextLineIndicatorOn : GameEvent
+    {
+    }
+    public class OnNextLineIndicatorOff : GameEvent
+    {
+    }
+    public class OnDialogueStartEvent : GameEvent
+    {
+    }
+    public class OnDialogueEndEvent : GameEvent
+    {
+    }
+    public class OnFreezePlayerDuringDialogue : GameEvent
+    {
+    }
+    public class OnUnFreezePlayerOnDialogueEnd : GameEvent
+    {
+    }
+    public class onSendDialogueQuestions : GameEvent
+    {
+        public List<string> dialogueQuestions = new List<string>();
+
+    }
+    public class onDialogueQuestionAnswered : GameEvent
+    {
+        int answerQuestionIndex;
+    }
+    
 
     /**********************
     *    Event Handlers   *
@@ -88,7 +127,7 @@ namespace Game.Core.GameSystem
             _ = EventManager.Instance;
 
             EventManager.Instance.Subscribe<OnDayEndEvent, ExampleDayEndHandler>();
-
+   
             Debug.Log("Initialized core systems.");
         }
 

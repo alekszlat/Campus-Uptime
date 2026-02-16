@@ -13,7 +13,6 @@ public class PlayerIdleState : GroundedState
         rb = stateController.GetComponent<Rigidbody2D>();
         base.Enter(stateController);
         
-        Debug.Log("idleState");
 
     }
 
@@ -66,16 +65,20 @@ public class PlayerIdleState : GroundedState
         base.Update(stateController);
 
         //Transition to movmentState
-        bool hasStartedMoving = stateController.GetInputMoveDir() != Vector2.zero;
-        if (hasStartedMoving && idleStateTimer.UpdateTimer(Time.deltaTime))
-        {
-            stateController.SwitchState(stateController.playerMovingState, stateController);
-        }
-
+        transitionState(stateController);
         //Animation logic      
         idleAnimationLogic(stateController);
 
 
     }
+    //Кога можем да минем към друг стейт
 
+    public override void transitionState(Player stateController)
+    {
+        bool hasStartedMoving = stateController.GetInputMoveDir() != Vector2.zero;
+        if (hasStartedMoving && idleStateTimer.UpdateTimer(Time.deltaTime))
+        {
+            stateController.SwitchState(stateController.playerMovingState, stateController);
+        }
+    }
 }

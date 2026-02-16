@@ -121,6 +121,28 @@ namespace Game.Core.EventSystem
             Debug.Log($"Subscribed {handlerType.Name} to {eventType.Name}");
         }
 
+
+        public void Subscribe<T, TH>(TH instance)
+        where T : GameEvent
+        where TH : IEventHandler<T>
+        {
+            Type eventType = typeof(T);
+            Type handlerType = typeof(TH);
+
+            if (!_handlers.ContainsKey(eventType))
+                _handlers[eventType] = new List<Type>();
+
+            if (_handlers[eventType].Contains(handlerType))
+            {
+                Debug.LogWarning($"Handler {handlerType.Name} already subscribed to {eventType.Name}");
+                return;
+            }
+
+            _handlers[eventType].Add(handlerType);
+            _handlerInstances[handlerType] = instance;
+            Debug.Log($"Subscribed {handlerType.Name} to {eventType.Name}");
+        }
+
         /// <summary>
         /// Removes a handler type from the subscription list for a given event type.
         /// </summary>
@@ -142,6 +164,7 @@ namespace Game.Core.EventSystem
 
             _handlerInstances.Remove(handlerType);
         }
+        
 
         /// <summary>
         /// Publishes an event to all subscribed handlers of its type.
@@ -149,6 +172,7 @@ namespace Game.Core.EventSystem
         /// </summary>
         /// <typeparam name="T">The type of event being published.</typeparam>
         /// <param name="event">The event instance to publish.</param>
+        
         public void Publish<T>(T @event) where T : GameEvent
         {
             Type eventType = typeof(T);
@@ -168,6 +192,7 @@ namespace Game.Core.EventSystem
                     handler.Handle(@event);
             }
         }
+       
 
         /// <summary>
         /// Clears all event subscriptions and cached handler instances.

@@ -11,7 +11,7 @@ public class PlayerMovingState : GroundedState
     public override void Enter(Player stateController)
     {
         base.Enter(stateController);
-        Debug.Log("MOVING state");
+     
     }
 
     public override void Exit(Player stateController)

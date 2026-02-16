@@ -5,7 +5,7 @@ public class PlayerInputService : MonoBehaviour
 {
     private PlayerInput playerInput;
     private Vector2 moveDir;
-
+    private bool isInteracting;
     void Awake()
     {
         playerInput = new PlayerInput();
@@ -20,24 +20,38 @@ public class PlayerInputService : MonoBehaviour
     {
         playerInput.Default.Movement.performed += GetMovement;
         playerInput.Default.testButton.started += OnTestButton;
+        playerInput.Default.Interact.started += SetupIsInteracting;
+        playerInput.Default.Interact.started += SetupIsInteracting;
     }
     private void OnDisable()
     {
         playerInput.Default.Disable();
         playerInput.Default.Movement.started -= OnTestButton;
         playerInput.Default.Movement.performed -= GetMovement;
+        playerInput.Default.Interact.started -= SetupIsInteracting;
 
     }
     public void GetMovement(InputAction.CallbackContext callback)
     {
         moveDir = callback.ReadValue<Vector2>();
     }
-
+    private void SetupIsInteracting(InputAction.CallbackContext callback)
+    {
+        isInteracting = true; 
+    }
     public Vector2 GetDirection()
     {
         return moveDir;
     }
-   
+    public bool GetIsInteracting()
+    {
+        if (isInteracting)
+        {
+            isInteracting = false;
+            return true;
+        }
+        return false;
+    }
     void Update()
     {
        
