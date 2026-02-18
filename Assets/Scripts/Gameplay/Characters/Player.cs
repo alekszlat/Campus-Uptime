@@ -14,7 +14,7 @@ public class Player : Character<Player>, IEventHandler<OnFreezePlayerDuringDialo
     public PlayerMovingState playerMovingState;
     public PlayerDialogueState playerDialogueState;
     public PlayerImmobileState playerImmobileState;
-    public Vector2 rawInput;
+
     //Animation
     public readonly int horizontalMovement = Animator.StringToHash("MoveHorizontal");
     public readonly int UpMovement = Animator.StringToHash("MoveUp");
@@ -23,7 +23,7 @@ public class Player : Character<Player>, IEventHandler<OnFreezePlayerDuringDialo
     public readonly int UpIdle = Animator.StringToHash("IdleUp");
     public readonly int DownIdle = Animator.StringToHash("IdleDown");
     //Parameters
-    private int playerSpeed = 6;
+    [SerializeField] private float playerSpeed = 6;
 
     Iinteractable interactObject=null;
 

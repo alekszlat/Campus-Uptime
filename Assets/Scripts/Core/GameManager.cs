@@ -5,11 +5,12 @@
  * Created: 11/10/2025
  * Updated: 11/10/2025
  */
-using System.Collections.Generic;
-using UnityEngine;
 using Game.Core.EventSystem;
 using Game.Core.TimeSystem;
 using NUnit.Framework;
+using System.Collections.Generic;
+using UnityEngine;
+using static PlasticGui.WorkspaceWindow.CodeReview.ReviewChanges.Summary.CommentSummaryData;
 
 namespace Game.Core.GameSystem
 {
@@ -55,12 +56,12 @@ namespace Game.Core.GameSystem
     }
     public class onSendDialogueQuestions : GameEvent
     {
-        public List<string> dialogueQuestions = new List<string>();
+       public List<Questions> dialogueQuestions = new List<Questions>();
 
     }
-    public class onDialogueQuestionAnswered : GameEvent
+    public class onDialogueQuestionAnsweredEvent : GameEvent
     {
-        int answerQuestionIndex;
+        public string nextDialogueNode;
     }
     
 

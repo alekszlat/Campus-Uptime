@@ -2,34 +2,45 @@ using Game.Core.EventSystem;
 using Game.Core.GameSystem;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Text.RegularExpressions;
+using Unity.Collections;
 using UnityEngine;
 
 
+public enum QuestionState { NoQuestion, HasQuestion, QuestionAlreadyAsked };
 class dialogBoxInfo
 {
-    public enum QuestionState {NoQuestion,HasQuestion,QuestionAlreadyAsked};
+    QuestionState questionState = QuestionState.NoQuestion;
     List<string> sentence = new List<string>();
     Sprite characterPortrait;
     string name;
-    List<string> questions = new List<string>();
-
-    QuestionState questionState = QuestionState.NoQuestion;
+    List<Questions> questions = new List<Questions>();
+    //Име на диалог
+    string id;
+    //Връзка към следващ диалог, ако е нъл при избор се взема един от id-тата от questions
+    string nextId;
     
-    public dialogBoxInfo(List<string> sentence, Sprite characterPortrait, string name)
+    public dialogBoxInfo(string id,string nextId,List<string> sentence, List<Questions> questions, Sprite characterPortrait, string name)
     {
         this.sentence = sentence;
         this.characterPortrait = characterPortrait;
         this.name = name;
-
-        if (questions.Count > 0)
+        this.id = id;
+        this.nextId = nextId;
+        this.questions = questions;
+        
+        if (questions!=null)
         {
             questionState = QuestionState.HasQuestion;
         }
+        else
+        {
+            questionState = QuestionState.NoQuestion;
+        }
 
     }
-    
-
+   
     public string GetName()
     {
         return name;
@@ -42,7 +53,7 @@ class dialogBoxInfo
     {
         return sentence;
     }
-    public List<string> GetQuestions()
+    public List<Questions> GetQuestions()
     {
         return questions;
     }
@@ -54,16 +65,23 @@ class dialogBoxInfo
     {
         this.questionState = questionState;
     }
-  
+    public string GetId()
+    {
+        return id;
+    }
+    public string GetNextId()
+    {
+        return nextId;
+    }
 }
 
 
-public class DialogueUtil : MonoBehaviour
+public class DialogueUtil : MonoBehaviour,IEventHandler<onDialogueQuestionAnsweredEvent>
 {
 
     [SerializeField] private bool frezeCharacterDuringDialogue = false;
-    private List<dialogBoxInfo> dialogueLinesArray = new List<dialogBoxInfo>();
- 
+
+    Dictionary<string, dialogBoxInfo> dialogueBoxDictionary = new Dictionary<string, dialogBoxInfo>();
     private string currentSentence;//сегашно изречение от масива с изречения на един dialogueBox
 
     private string temp ="";//събира сегашното изречение буква по буква
@@ -74,10 +92,11 @@ public class DialogueUtil : MonoBehaviour
     dialogBoxInfo currentDialogue;//сегашния dialogueBox
     private int currentBoxCharIndx = 0;//общ чар в целия dialogBox 
     private int currentCharIndx = 0;//сегашен чар на сегашното изречение
-    private int currentDialogueBoxIndx = 0;//индекс на кой диалог сме
+    private string currentDialogueKey = " ";//ключ на кой диалог сме
     private int currentDialogueLineIndx = 0;//индекс на коя линия в диалога сме
+    
     enum dialogueStates{inactive,initiazlizeDialogue,StartCurrDialogue,dialogueQuestionState, WaitingForNextLine, Typing,EndCurrDialogue,Close}
-
+    string startKey="sad";
     dialogueStates currentState=dialogueStates.initiazlizeDialogue;
 
     //EVENTS
@@ -89,15 +108,15 @@ public class DialogueUtil : MonoBehaviour
     OnDialogueStartEvent onDialogueStartEvent = new OnDialogueStartEvent();
     OnFreezePlayerDuringDialogue onPlayerFreezePlayerDuringDialogue = new OnFreezePlayerDuringDialogue();
     OnUnFreezePlayerOnDialogueEnd onPlayerUnFreezePlayerOnDialogueEnd = new OnUnFreezePlayerOnDialogueEnd();
+    onSendDialogueQuestions onSendDialogueQuestions = new onSendDialogueQuestions();
     TimerUtil dialogueCharTimer;//CustomTimer
-
-
-  
-
-    private void Start()
+    dialogBoxInfo a;
+    dialogBoxInfo b;
+    dialogBoxInfo c;
+    string lastKey;
+    bool hasAlreadyConversed = false;
+    private void Awake()
     {
-      
-
         List<string> list1 = new List<string>();
         list1.Add("AAAAAAAA.\n");
         list1.Add("<color=#FF0000>DIMOFF</color> MAMKA MU\n");
@@ -105,19 +124,31 @@ public class DialogueUtil : MonoBehaviour
 
         List<string> list2 = new List<string>();
         list2.Add("<size=400%>brrrrrrrrrrrrr.</size>");
-        list2.Add("ZZZZZ MU\n");
+        list2.Add("Losho \n");
         list2.Add("MAZNA\n");
+        List<string> list3 = new List<string>();
+        list3.Add("Кuchjeto e ok :)");
+ 
+        List<Questions> questions = new List<Questions>();
 
+        questions.Add(new Questions("Da dog not Fine", "depressed"));
+        questions.Add(new Questions("Da dog fine", "happy"));
+        questions.Add(new Questions("Da dog not Fine", "depressed"));
+        questions.Add(new Questions("Da dog fine", "happy"));
 
-        dialogBoxInfo a = new dialogBoxInfo(list1,null,"Dave");
-        dialogBoxInfo b = new dialogBoxInfo(list2, null, "Dave tupiq");
-        dialogueLinesArray.Add(a);
-        dialogueLinesArray.Add(b);
+        a = new dialogBoxInfo("sad", "", list1, questions, null, "Dave");
+        b = new dialogBoxInfo("depressed", "", list2, null, null, "Dave tujniq");
+        c = new dialogBoxInfo("happy", "", list3, null, null, "Dave shtastliviq");
 
-     
+        dialogueBoxDictionary[a.GetId()] = a;
+        dialogueBoxDictionary[b.GetId()] = b;
+        dialogueBoxDictionary[c.GetId()] = c;
+    }
+    private void Start()
+    {
+      
         currentCharDelay = startingCharDelay;
         dialogueCharTimer = new TimerUtil(currentCharDelay, true);
-
 
     }
     // Update is called once per frame
@@ -125,13 +156,27 @@ public class DialogueUtil : MonoBehaviour
     {
         if (currentState == dialogueStates.initiazlizeDialogue)
         {
+
+
+            //началният ключ от тук ще започне диалога
+            if (!hasAlreadyConversed)
+            {
+                currentDialogueKey = startKey;
+                hasAlreadyConversed = true;
+            }
+            else
+            {
+                currentDialogueKey = lastKey;
+            }
+
             EventManager.Instance.Publish(onDialogueStartEvent);
+            switchState(dialogueStates.StartCurrDialogue);
             if (frezeCharacterDuringDialogue)
             {
                 EventManager.Instance.Publish(onPlayerFreezePlayerDuringDialogue);
             }
-            switchState(dialogueStates.StartCurrDialogue);
-       
+         
+
         }
         else if (currentState == dialogueStates.StartCurrDialogue)
         {
@@ -150,12 +195,14 @@ public class DialogueUtil : MonoBehaviour
         else if (currentState == dialogueStates.EndCurrDialogue)
         {
 
-            endDialogueState();
+            endCurrentDialogueState();
 
         }
-        else if(currentState== dialogueStates.dialogueQuestionState)
+        else if (currentState == dialogueStates.dialogueQuestionState)
         {
-            //IF SIGNAL CONFIRMATION SENT FROM UI TO DIALOGUE SwitchToDialogue
+
+            //Empty state while player is choising an answer
+            //When player answers an event will switch state to EndCurrentDialogue, witch will decide weather to continiue dialogue
         }
         else if (currentState == dialogueStates.Close)
         {
@@ -163,6 +210,11 @@ public class DialogueUtil : MonoBehaviour
         }
         print(currentState);
 
+        print(currentDialogueKey);
+        if (currentDialogueKey != ""&&lastKey!=currentDialogueKey)
+        {
+            lastKey = currentDialogueKey;
+        }
     }
 
 
@@ -203,42 +255,64 @@ public class DialogueUtil : MonoBehaviour
             EventManager.Instance.Publish(onPlayerUnFreezePlayerOnDialogueEnd);
          }
          EventManager.Instance.Publish(onDialogueEndEvent);
-         currentDialogueBoxIndx = 0;
+   
          switchState(dialogueStates.inactive);
 
     }
-  
-    void endDialogueState()
+
+    public void Handle(onDialogueQuestionAnsweredEvent @event)
+    {
+     
+        //когато отговорим на въпроса сменяме сегашния диалог,сменяме стейта и маркираме,че въпросът е зададен
+        currentDialogueKey = @event.nextDialogueNode;
+        print("Event klucha e "+@event.nextDialogueNode);
+        switchState(dialogueStates.EndCurrDialogue);
+        currentDialogue.SetQuestionState(QuestionState.QuestionAlreadyAsked);
+    }
+    void endCurrentDialogueState()
     {
         //Tози стейт само ни пренасочва към стейт
         //Ако има още диалози ни насочва към стейт за диалог, ако не затватя диалога
-       
-        if (currentDialogue.GetQuestionState()==dialogBoxInfo.QuestionState.HasQuestion)
+
+        if (currentDialogue.GetQuestionState() == QuestionState.HasQuestion)
         {
+            //Ако има въпрос влизаме в празен стейт,докато чакаме отговор и изпращаме въпросите на DialogueManager
             switchState(dialogueStates.dialogueQuestionState);
-            //EMIT SIGNAL
-        }
-        else if (currentDialogueBoxIndx+1 < dialogueLinesArray.Count)
+            onSendDialogueQuestions.dialogueQuestions = currentDialogue.GetQuestions();
+            EventManager.Instance.Publish(onSendDialogueQuestions);
+        } //Ako има някакъв диалог
+        else if (currentDialogue.GetNextId().Length != 0 || currentDialogue.GetQuestionState() == QuestionState.QuestionAlreadyAsked)
         {
-                currentDialogueBoxIndx++;
-                currentDialogueLineIndx = 0;
-                currentBoxCharIndx = 0;
-                switchState(dialogueStates.StartCurrDialogue);
+            //Ако има следващо Id го взима в противен случай, взима диалога избран от играча
+            //запазваме последния ключ диалог
+            if (currentDialogue.GetNextId().Length != 0)
+            {
+                currentDialogueKey = currentDialogue.GetNextId();
+         
+            }
+           
+            currentDialogueLineIndx = 0;
+            currentBoxCharIndx = 0;
+            switchState(dialogueStates.StartCurrDialogue);
         }
         else
         {
+            currentDialogueLineIndx = 0;
             switchState(dialogueStates.Close);
-
         }
     }
+  
     void dialogueStartState()
     {
         //Тук е когато всеки нов Dialogue box започва 
         //Взима се сашния масив с dialogue lines, което държи dialogue object, currentDialogue е dialogue object
         //Изпращаме всички данни за сегашние dialogBox чрез евент и ресетваме charIndx.
-
-        currentCharIndx = 0; 
-        currentDialogue = dialogueLinesArray[currentDialogueBoxIndx];
+        //взимаме сегашния диалог с ключ
+        currentCharIndx = 0;
+        //Ако сме минали през диалога веднъж ключа ще е празен низ, за това всимаме последния ключ
+        
+ 
+        currentDialogue = dialogueBoxDictionary[currentDialogueKey];
 
         //Събираме диалога от всички изречения в сегашния dialogueBox
         string fullDialogueBoxText="";
@@ -266,7 +340,7 @@ public class DialogueUtil : MonoBehaviour
     }
     void setuiDialogue()
     {
-        //Взима сегашното изречение от масива с изречение, и го изчиства от тагове, те са нужни само когато изпращаме изреченията на ui
+        //Всеки dialogue бокс има масив с изречения, тук взимаме сегашното,изчистваме го и изпащаме думата
         currentSentence = currentDialogue.GetSentence()[currentDialogueLineIndx];
         currentSentence = Regex.Replace(currentSentence, "<[^>]+>", "");
         dialogueCharTimer.ResetTimer();
@@ -305,24 +379,22 @@ public class DialogueUtil : MonoBehaviour
     }
  
 
-    //OLD
-    IEnumerator typeCurrentWord()
+    public string getCurrentDialogueKey()
     {
-        while (currentCharIndx < currentSentence.Length)
-        {
-         
-            temp += currentSentence[currentCharIndx++];
-            currentBoxCharIndx++;
-            dialogueIndxChangedEvent.NewDialogueIndx = currentBoxCharIndx;
-
-            EventManager.Instance.Publish(dialogueIndxChangedEvent);
-
-            yield return new WaitForSeconds(currentCharDelay);
-        }
-
-        currentDialogueLineIndx++;
-        switchState(dialogueStates.WaitingForNextLine);
+        return currentDialogueKey;
     }
 
-    
+    public void setCurrentDialogueKey(string newDialogueKey) {
+        currentDialogueKey = newDialogueKey;
+    }
+
+    void OnEnable()
+    {
+        EventManager.Instance.Subscribe<onDialogueQuestionAnsweredEvent, DialogueUtil>(this);
+    }
+
+    void OnDisable()
+    {
+        EventManager.Instance.Unsubscribe<onDialogueQuestionAnsweredEvent, DialogueUtil>();
+    }
 }
