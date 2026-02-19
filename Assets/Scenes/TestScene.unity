@@ -729,7 +729,7 @@ GameObject:
   - component: {fileID: 1024754047}
   - component: {fileID: 1024754049}
   m_Layer: 0
-  m_Name: Square
+  m_Name: Wall
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -925,7 +925,7 @@ MonoBehaviour:
   m_ChildForceExpandWidth: 0
   m_ChildForceExpandHeight: 1
   m_ChildControlWidth: 0
-  m_ChildControlHeight: 0
+  m_ChildControlHeight: 1
   m_ChildScaleWidth: 0
   m_ChildScaleHeight: 0
   m_ReverseArrangement: 0
@@ -1458,7 +1458,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1402280558}
-  - component: {fileID: 1402280557}
   m_Layer: 0
   m_Name: GameObject
   m_TagString: Untagged
@@ -1466,20 +1465,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1402280557
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1402280556}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b75d25e27c4e5f0429b51b0306267e65, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  frezeCharacterDuringDialogue: 1
-  startingCharDelay: 0.1
 --- !u!4 &1402280558
 Transform:
   m_ObjectHideFlags: 0
@@ -1740,8 +1725,9 @@ GameObject:
   - component: {fileID: 2084682117}
   - component: {fileID: 2084682115}
   - component: {fileID: 2084682116}
+  - component: {fileID: 2084682119}
   m_Layer: 0
-  m_Name: Square (1)
+  m_Name: TestInteractObj
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1876,6 +1862,20 @@ Transform:
   - {fileID: 1689209876}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2084682119
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2084682114}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b75d25e27c4e5f0429b51b0306267e65, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  frezeCharacterDuringDialogue: 0
+  startingCharDelay: 0.1
 --- !u!1 &2108526925
 GameObject:
   m_ObjectHideFlags: 0
@@ -2085,6 +2085,26 @@ PrefabInstance:
     - target: {fileID: 5949536658162102406, guid: e5154d33cd68d7a4d89cec066039debe, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6441906295928793230, guid: e5154d33cd68d7a4d89cec066039debe, type: 3}
+      propertyPath: m_Size.x
+      value: 3.8310335
+      objectReference: {fileID: 0}
+    - target: {fileID: 6441906295928793230, guid: e5154d33cd68d7a4d89cec066039debe, type: 3}
+      propertyPath: m_Size.y
+      value: 3.4831674
+      objectReference: {fileID: 0}
+    - target: {fileID: 6441906295928793230, guid: e5154d33cd68d7a4d89cec066039debe, type: 3}
+      propertyPath: m_Offset.x
+      value: -0.06350684
+      objectReference: {fileID: 0}
+    - target: {fileID: 6441906295928793230, guid: e5154d33cd68d7a4d89cec066039debe, type: 3}
+      propertyPath: m_Offset.y
+      value: -0.044875026
+      objectReference: {fileID: 0}
+    - target: {fileID: 6678092173391461356, guid: e5154d33cd68d7a4d89cec066039debe, type: 3}
+      propertyPath: m_text
+      value: Press E to Talk
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

@@ -8,12 +8,11 @@ public class Player : Character<Player>, IEventHandler<OnFreezePlayerDuringDialo
 {
     //Monobehavior class that keeps track of the player input
     private PlayerInputService playerInputHandler;//we put the playerInputService in the inspector and access it from here
-    
+
     //Diffrent player states
     public PlayerIdleState playerIdleState;
-    public PlayerMovingState playerMovingState;
-    public PlayerDialogueState playerDialogueState;
-    public PlayerImmobileState playerImmobileState;
+    public PlayerMovementState playerMovingState;
+    public ImmobileState<Player> playerImmobileState;
 
     //Animation
     public readonly int horizontalMovement = Animator.StringToHash("MoveHorizontal");
@@ -22,10 +21,11 @@ public class Player : Character<Player>, IEventHandler<OnFreezePlayerDuringDialo
     public readonly int horizontalIdle = Animator.StringToHash("IdleHorizontal");
     public readonly int UpIdle = Animator.StringToHash("IdleUp");
     public readonly int DownIdle = Animator.StringToHash("IdleDown");
+
     //Parameters
     [SerializeField] private float playerSpeed = 6;
 
-    Iinteractable interactObject=null;
+    Iinteractable interactObject = null;
 
     void OnEnable()
     {
@@ -44,9 +44,8 @@ public class Player : Character<Player>, IEventHandler<OnFreezePlayerDuringDialo
         base.Start();
 
         playerIdleState = new PlayerIdleState();
-        playerMovingState = new PlayerMovingState();
-        playerDialogueState = new PlayerDialogueState();
-        playerImmobileState = new PlayerImmobileState();
+        playerMovingState = new PlayerMovementState();
+        playerImmobileState = new ImmobileState<Player>();
         SetSpeed(playerSpeed);
         playerInputHandler = GetComponent<PlayerInputService>();
         SetInitialState(playerIdleState);
@@ -54,7 +53,7 @@ public class Player : Character<Player>, IEventHandler<OnFreezePlayerDuringDialo
     }
     private void FixedUpdate()
     {
-      
+
         FixedUpdateCurrentState(this);
     }
 
@@ -70,11 +69,14 @@ public class Player : Character<Player>, IEventHandler<OnFreezePlayerDuringDialo
         if (interactObject != null && playerInputHandler.GetIsInteracting())
         {
             interactObject.interact();
-        }
 
+        }
     }
 
-    //проверка дали сме в влезвли в обект с, който можем да интерактваме
+    //Проверка дали сме в влезвли в обект с, който можем да интерактваме
+    //Проверката е, ако сме влезли в тригър,най-вероятно и гледаме родителя на тригъра
+    //Имам обект OnEnterInteractMessage, който има тригър и показва съобщение
+    //ако върху този обект върху родителя име interact ще се активира
     private void OnTriggerEnter2D(Collider2D collision)
     {
         testInteract interact = collision.GetComponentInParent<testInteract>();
@@ -84,7 +86,7 @@ public class Player : Character<Player>, IEventHandler<OnFreezePlayerDuringDialo
             interactObject = interact;
         }
     }
-  
+
     private void OnTriggerExit2D(Collider2D collision)
     {
         if (interactObject != null)
@@ -95,11 +97,48 @@ public class Player : Character<Player>, IEventHandler<OnFreezePlayerDuringDialo
 
     public void Handle(OnFreezePlayerDuringDialogue @event)
     {
-        SwitchState(playerImmobileState,this);
+        SwitchState(playerImmobileState, this);
     }
 
     public void Handle(OnUnFreezePlayerOnDialogueEnd @event)
     {
         SwitchState(playerIdleState, this);
     }
-}
+    public override int GetHorizontalMoveAnim()
+    {
+        return horizontalMovement;
+    }
+
+    public override int GetUpMoveAnim()
+    {
+        return UpMovement;
+    }
+
+    public override int GetDownMoveAnim()
+    {
+        return DownMovement;
+    }
+    public override int GetDownIdleAnim()
+    {
+        return DownIdle;
+    }
+    public override int GetHorizontalIdleAnim()
+    {
+        return horizontalIdle;
+    }
+    public override int GetUpIdleAnim()
+    {
+        return UpIdle;
+    }
+    public override State<Player>GetIdleState(){
+        return playerIdleState;
+    }
+    public override State<Player> GetMovingState()
+    {
+        return playerMovingState;
+    }
+    public override State<Player> GetImmobleState()
+    {
+        return playerImmobileState;
+    }
+}   

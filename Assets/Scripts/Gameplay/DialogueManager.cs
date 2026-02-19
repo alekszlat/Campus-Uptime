@@ -76,7 +76,7 @@ class dialogBoxInfo
 }
 
 
-public class DialogueUtil : MonoBehaviour,IEventHandler<onDialogueQuestionAnsweredEvent>
+public class DialogueManager : MonoBehaviour,IEventHandler<onDialogueQuestionAnsweredEvent>
 {
 
     [SerializeField] private bool frezeCharacterDuringDialogue = false;
@@ -95,9 +95,9 @@ public class DialogueUtil : MonoBehaviour,IEventHandler<onDialogueQuestionAnswer
     private string currentDialogueKey = " ";//ключ на кой диалог сме
     private int currentDialogueLineIndx = 0;//индекс на коя линия в диалога сме
     
-    enum dialogueStates{inactive,initiazlizeDialogue,StartCurrDialogue,dialogueQuestionState, WaitingForNextLine, Typing,EndCurrDialogue,Close}
-    string startKey="sad";
-    dialogueStates currentState=dialogueStates.initiazlizeDialogue;
+   
+    string startKey="normal";
+    dialogueStates currentState=dialogueStates.inactive;
 
     //EVENTS
     OnDialogueBoxInfoEvent dialogueNewSentenceEvent = new OnDialogueBoxInfoEvent();
@@ -119,7 +119,7 @@ public class DialogueUtil : MonoBehaviour,IEventHandler<onDialogueQuestionAnswer
     {
         List<string> list1 = new List<string>();
         list1.Add("AAAAAAAA.\n");
-        list1.Add("<color=#FF0000>DIMOFF</color> MAMKA MU\n");
+        list1.Add("<color=#FF0000>DIMOFF</color> ааа\n");
         list1.Add("MAZNA");
 
         List<string> list2 = new List<string>();
@@ -131,13 +131,13 @@ public class DialogueUtil : MonoBehaviour,IEventHandler<onDialogueQuestionAnswer
  
         List<Questions> questions = new List<Questions>();
 
-        questions.Add(new Questions("Da dog not Fine", "depressed"));
+        questions.Add(new Questions("Da dog not Fine", "sad"));
         questions.Add(new Questions("Da dog fine", "happy"));
-        questions.Add(new Questions("Da dog not Fine", "depressed"));
+        questions.Add(new Questions("Da dog not Fine", "sad"));
         questions.Add(new Questions("Da dog fine", "happy"));
 
-        a = new dialogBoxInfo("sad", "", list1, questions, null, "Dave");
-        b = new dialogBoxInfo("depressed", "", list2, null, null, "Dave tujniq");
+        a = new dialogBoxInfo("normal", "", list1, questions, null, "Dave");
+        b = new dialogBoxInfo("sad", "", list2, null, null, "Dave tujniq");
         c = new dialogBoxInfo("happy", "", list3, null, null, "Dave shtastliviq");
 
         dialogueBoxDictionary[a.GetId()] = a;
@@ -170,7 +170,7 @@ public class DialogueUtil : MonoBehaviour,IEventHandler<onDialogueQuestionAnswer
             }
 
             EventManager.Instance.Publish(onDialogueStartEvent);
-            switchState(dialogueStates.StartCurrDialogue);
+            SetDialogueState(dialogueStates.StartCurrDialogue);
             if (frezeCharacterDuringDialogue)
             {
                 EventManager.Instance.Publish(onPlayerFreezePlayerDuringDialogue);
@@ -242,7 +242,7 @@ public class DialogueUtil : MonoBehaviour,IEventHandler<onDialogueQuestionAnswer
             else
             {
                 currentDialogueLineIndx++;
-                switchState(dialogueStates.WaitingForNextLine);
+                SetDialogueState(dialogueStates.WaitingForNextLine);
                 break;
             }
         }
@@ -256,7 +256,7 @@ public class DialogueUtil : MonoBehaviour,IEventHandler<onDialogueQuestionAnswer
          }
          EventManager.Instance.Publish(onDialogueEndEvent);
    
-         switchState(dialogueStates.inactive);
+         SetDialogueState(dialogueStates.inactive);
 
     }
 
@@ -266,7 +266,7 @@ public class DialogueUtil : MonoBehaviour,IEventHandler<onDialogueQuestionAnswer
         //когато отговорим на въпроса сменяме сегашния диалог,сменяме стейта и маркираме,че въпросът е зададен
         currentDialogueKey = @event.nextDialogueNode;
         print("Event klucha e "+@event.nextDialogueNode);
-        switchState(dialogueStates.EndCurrDialogue);
+        SetDialogueState(dialogueStates.EndCurrDialogue);
         currentDialogue.SetQuestionState(QuestionState.QuestionAlreadyAsked);
     }
     void endCurrentDialogueState()
@@ -277,7 +277,7 @@ public class DialogueUtil : MonoBehaviour,IEventHandler<onDialogueQuestionAnswer
         if (currentDialogue.GetQuestionState() == QuestionState.HasQuestion)
         {
             //Ако има въпрос влизаме в празен стейт,докато чакаме отговор и изпращаме въпросите на DialogueManager
-            switchState(dialogueStates.dialogueQuestionState);
+            SetDialogueState(dialogueStates.dialogueQuestionState);
             onSendDialogueQuestions.dialogueQuestions = currentDialogue.GetQuestions();
             EventManager.Instance.Publish(onSendDialogueQuestions);
         } //Ako има някакъв диалог
@@ -293,12 +293,13 @@ public class DialogueUtil : MonoBehaviour,IEventHandler<onDialogueQuestionAnswer
            
             currentDialogueLineIndx = 0;
             currentBoxCharIndx = 0;
-            switchState(dialogueStates.StartCurrDialogue);
+            SetDialogueState(dialogueStates.StartCurrDialogue);
         }
         else
         {
             currentDialogueLineIndx = 0;
-            switchState(dialogueStates.Close);
+            currentBoxCharIndx = 0;
+            SetDialogueState(dialogueStates.Close);
         }
     }
   
@@ -335,7 +336,7 @@ public class DialogueUtil : MonoBehaviour,IEventHandler<onDialogueQuestionAnswer
         setuiDialogue();
 
 
-        switchState(dialogueStates.Typing);
+        SetDialogueState(dialogueStates.Typing);
 
     }
     void setuiDialogue()
@@ -353,48 +354,48 @@ public class DialogueUtil : MonoBehaviour,IEventHandler<onDialogueQuestionAnswer
 
         if (currentDialogueLineIndx >= currentDialogue.GetSentence().Count)
         {
-            if (Input.GetKeyDown(KeyCode.Space))
+            if (Input.GetKeyDown(KeyCode.E))
             {
-                switchState(dialogueStates.EndCurrDialogue);
+                SetDialogueState(dialogueStates.EndCurrDialogue);
             }
 
         }
-        else if (Input.GetKeyDown(KeyCode.Space))
+        else if (Input.GetKeyDown(KeyCode.E))
         {
             setuiDialogue();
 
             currentCharIndx = 0;
-            switchState(dialogueStates.Typing);
+            SetDialogueState(dialogueStates.Typing);
           
         }
     }
   
    
-    void switchState(dialogueStates newState)
+    public void SetDialogueState(dialogueStates newState)
     {
-        //Сменяме стейа
         currentState = newState;
-
-
     }
- 
+    public dialogueStates GetDialogueState()
+    {
+        return currentState;
+    }
 
-    public string getCurrentDialogueKey()
+    public string GetCurrentDialogueKey()
     {
         return currentDialogueKey;
     }
 
-    public void setCurrentDialogueKey(string newDialogueKey) {
+    public void SetCurrentDialogueKey(string newDialogueKey) {
         currentDialogueKey = newDialogueKey;
     }
 
     void OnEnable()
     {
-        EventManager.Instance.Subscribe<onDialogueQuestionAnsweredEvent, DialogueUtil>(this);
+        EventManager.Instance.Subscribe<onDialogueQuestionAnsweredEvent, DialogueManager>(this);
     }
 
     void OnDisable()
     {
-        EventManager.Instance.Unsubscribe<onDialogueQuestionAnsweredEvent, DialogueUtil>();
+        EventManager.Instance.Unsubscribe<onDialogueQuestionAnsweredEvent, DialogueManager>();
     }
 }

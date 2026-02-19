@@ -3,51 +3,49 @@ using System.Collections.Generic;
 using UnityEditor.Rendering.LookDev;
 using UnityEngine;
 
-public class PlayerIdleState : GroundedState
+public class IdleState<T> : GroundedState<T>where T:Character<T>
 {
-    TimerUtil idleStateTimer = new TimerUtil(0.01f, true);//used to make a clean transition between states
-    Rigidbody2D rb;
-    Vector2 lookDir;
-    public override void Enter(Player stateController)
+    protected TimerUtil idleStateTimer = new TimerUtil(0.01f, true);//used to make a clean transition between states
+    protected Rigidbody2D rb;
+    protected Vector2 lookDir;
+    public override void Enter(T stateController)
     {
         rb = stateController.GetComponent<Rigidbody2D>();
         base.Enter(stateController);
-        
-
     }
 
-    public override void Exit(Player stateController)
+    public override void Exit(T stateController)
     {
         base.Exit(stateController);
        
     }
 
-    public override void FixedUpdate(Player stateController)
+    public override void FixedUpdate(T stateController)
     {
        base.FixedUpdate(stateController);
        rb.linearVelocity = Vector2.zero;
     }
-    public void idleAnimationLogic(Player stateController)
+    public void idleAnimationLogic(T stateController)
     {
         if (lookDir.x > 0.01f)
         {
-            currentAnimation = stateController.horizontalIdle;
+            currentAnimation = stateController.GetHorizontalIdleAnim();
         }
         else if (lookDir.x < -0.01f)
         {
-            currentAnimation = stateController.horizontalIdle;
+            currentAnimation = stateController.GetHorizontalIdleAnim();
         }
         else if (lookDir.y > 0.01f)
         {
-            currentAnimation = stateController.UpIdle;
+            currentAnimation = stateController.GetUpIdleAnim();
         }
         else if (lookDir.y < -0.01f)
         {
-            currentAnimation = stateController.DownIdle;
+            currentAnimation = stateController.GetDownIdleAnim();
         }
         else
         {
-            currentAnimation = stateController.horizontalIdle;
+            currentAnimation = stateController.GetHorizontalIdleAnim();
         }
 
         //if the animation is diffrent from the last one we switch and save the new one as old animation
@@ -57,28 +55,28 @@ public class PlayerIdleState : GroundedState
             playerAnimator.CrossFade(currentAnimation, 0.1f);
         }
     }
-    public override void Update(Player stateController)
+    public override void Update(T stateController)
     {
         lookDir = stateController.GetLookDir();//Direction the player is looking at
      
  
         base.Update(stateController);
-
-        //Transition to movmentState
+      
+        //Функция ,която гледа кога можем да минем към друг стейт
+        //за всеки клас Player NPC ще е различна
         transitionState(stateController);
         //Animation logic      
         idleAnimationLogic(stateController);
 
 
     }
-    //Кога можем да минем към друг стейт
 
-    public override void transitionState(Player stateController)
+    public override void transitionState(T stateController)
     {
         bool hasStartedMoving = stateController.GetInputMoveDir() != Vector2.zero;
         if (hasStartedMoving && idleStateTimer.UpdateTimer(Time.deltaTime))
         {
-            stateController.SwitchState(stateController.playerMovingState, stateController);
+            stateController.SwitchState(stateController.GetMovingState(), stateController);
         }
     }
 }

@@ -63,7 +63,7 @@ namespace Game.Core.GameSystem
     {
         public string nextDialogueNode;
     }
-    
+    public enum dialogueStates { inactive, initiazlizeDialogue, StartCurrDialogue, dialogueQuestionState, WaitingForNextLine, Typing, EndCurrDialogue, Close }
 
     /**********************
     *    Event Handlers   *

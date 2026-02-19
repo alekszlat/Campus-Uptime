@@ -21,7 +21,7 @@ public class PlayerInputService : MonoBehaviour
         playerInput.Default.Movement.performed += GetMovement;
         playerInput.Default.testButton.started += OnTestButton;
         playerInput.Default.Interact.started += SetupIsInteracting;
-        playerInput.Default.Interact.started += SetupIsInteracting;
+     
     }
     private void OnDisable()
     {
@@ -45,12 +45,12 @@ public class PlayerInputService : MonoBehaviour
     }
     public bool GetIsInteracting()
     {
-        if (isInteracting)
-        {
-            isInteracting = false;
-            return true;
-        }
-        return false;
+        return isInteracting;
+    }
+
+    void LateUpdate()
+    {
+        isInteracting = false;
     }
     void Update()
     {

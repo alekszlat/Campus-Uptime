@@ -121,5 +121,19 @@ public abstract class Character<T> : MonoBehaviour
     {
         return lookDir;
     }
+    public abstract int GetHorizontalMoveAnim();
 
+    public abstract int GetUpMoveAnim();
+
+    public abstract int GetDownMoveAnim();
+
+    public abstract int GetHorizontalIdleAnim();
+
+    public abstract int GetUpIdleAnim();
+
+    public abstract int GetDownIdleAnim();
+
+    public abstract State<T> GetIdleState();
+    public abstract State<T> GetMovingState();
+    public abstract State<T> GetImmobleState();
 }

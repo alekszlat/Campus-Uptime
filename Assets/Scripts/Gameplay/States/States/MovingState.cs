@@ -3,24 +3,24 @@ using UnityEditor.Rendering.LookDev;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-public class PlayerMovingState : GroundedState
+public class MovingState<T> : GroundedState<T>where T:Character<T>
 {
-    TimerUtil movingStateTimer = new TimerUtil(0.1f, true);
-    Vector2 moveDir;
+   protected TimerUtil movingStateTimer = new TimerUtil(0.1f, true);
+   protected Vector2 moveDir;
 
-    public override void Enter(Player stateController)
+    public override void Enter(T stateController)
     {
         base.Enter(stateController);
-     
+
     }
 
-    public override void Exit(Player stateController)
+    public override void Exit(T stateController)
     {
          base.Exit(stateController);
        
     }
 
-    public override void FixedUpdate(Player stateController)
+    public override void FixedUpdate(T stateController)
     {
         base.FixedUpdate(stateController);
         stateController.SetInputMoveDir(stateController.GetInputMoveDir());
@@ -28,25 +28,25 @@ public class PlayerMovingState : GroundedState
 
     }
 
-    public void movementAnimation(Player stateController)
+    public void movementAnimation(T stateController)
     {
         if (moveDir.x > 0.01f)
         {
             spriteRenderer.flipX = false;
-            currentAnimation = stateController.horizontalMovement;
+            currentAnimation = stateController.GetHorizontalMoveAnim();
         }
         else if (moveDir.x < -0.01f)
         {
             spriteRenderer.flipX = true;
-            currentAnimation = stateController.horizontalMovement;
+            currentAnimation = stateController.GetHorizontalMoveAnim();
         }
         else if (moveDir.y > 0.01f)
         {
-            currentAnimation = stateController.UpMovement;
+            currentAnimation = stateController.GetUpMoveAnim();
         }
         else if (moveDir.y < -0.01f)
         {
-            currentAnimation = stateController.DownMovement;
+            currentAnimation = stateController.GetDownMoveAnim();
         }
 
 
@@ -58,8 +58,10 @@ public class PlayerMovingState : GroundedState
             playerAnimator.CrossFade(currentAnimation, 0.2f);
         }
     }
-   
-    public override void Update(Player stateController)
+
+  
+  
+    public override void Update(T stateController)
     {
      
         base.Update(stateController);
@@ -68,17 +70,19 @@ public class PlayerMovingState : GroundedState
         //Switching player movement Animations
 
         SpriteRenderer spriteRenderer = stateController.GetComponent<SpriteRenderer>();
-   
+
         //From Moving To idle
-        bool hasStopped = moveDir == Vector2.zero;
-        if (hasStopped && movingStateTimer.UpdateTimer(Time.deltaTime))
-        {
-            stateController.SwitchState(stateController.playerIdleState, stateController);
-        }
+        transitionState(stateController);
 
         movementAnimation(stateController);
 
-
-
+    }
+    public override void transitionState(T stateController)
+    {
+        bool hasStopped = moveDir == Vector2.zero;
+        if (hasStopped && movingStateTimer.UpdateTimer(Time.deltaTime))
+        {
+            stateController.SwitchState(stateController.GetIdleState(), stateController);
+        }
     }
 }
