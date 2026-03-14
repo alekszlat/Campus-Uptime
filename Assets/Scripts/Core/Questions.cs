@@ -1,17 +1,16 @@
 
 
+using System;
+using UnityEngine;
+
 namespace Game.Core.GameSystem
 {
+    [Serializable]
     public class Questions
     {
-        string question;
-        string nextId;
+        [SerializeField] string question;
+        [SerializeField] string nextId;
 
-        public Questions(string question, string nextId)
-        {
-            this.question = question;
-            this.nextId = nextId;
-        }
         public string GetQuestion()
         {
             return question;

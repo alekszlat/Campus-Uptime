@@ -27,7 +27,27 @@ using UnityEngine;
             if (isRepeated && isReady) { ResetTimer(); };
             return isReady;
         }
-        public void ResetTimer()
+        private bool IsTimerReady2()
+        {
+            bool isReady = currentTime >= duration;
+
+            if (currentTime >= duration)
+            {
+                if (isRepeated)
+                {
+                    currentTime -= duration;
+                }
+                else
+                {
+                    currentTime = duration;
+                }
+
+                return true;
+            }
+
+            return false;
+        }
+    public void ResetTimer()
         {
             currentTime = 0;
         }

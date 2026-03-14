@@ -1,36 +1,51 @@
 using Game.Core.EventSystem;
 using Game.Core.GameSystem;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Text.RegularExpressions;
 using Unity.Collections;
 using UnityEngine;
+using UnityEngine.UI;
 
 
 public enum QuestionState { NoQuestion, HasQuestion, QuestionAlreadyAsked };
-class dialogBoxInfo
+
+
+[Serializable]
+public class dialogBoxInfo: ISerializationCallbackReceiver
 {
-    QuestionState questionState = QuestionState.NoQuestion;
-    List<string> sentence = new List<string>();
-    Sprite characterPortrait;
-    string name;
-    List<Questions> questions = new List<Questions>();
+    //искам това да се преценява от questions лист, дали има или няма въпроси
+    private QuestionState questionState = QuestionState.NoQuestion;
+
+ 
+
+    //Име на герой
+    [SerializeField] string name;
+    //Лист с въпроси, ако има такива
+    //Класа въпроси съдържа въпрос и следващо id(към кой диалог води)
+    [SerializeField] List<Questions> questions = new List<Questions>();
+    //Лист с изречения в един диалог бокс
+    [SerializeField] List<string> sentence = new List<string>();
+    //Снимка на герой
+    [SerializeField] Sprite portrait;
+
     //Име на диалог
-    string id;
+    [SerializeField] string thisDialogueId;
+
     //Връзка към следващ диалог, ако е нъл при избор се взема един от id-тата от questions
-    string nextId;
-    
-    public dialogBoxInfo(string id,string nextId,List<string> sentence, List<Questions> questions, Sprite characterPortrait, string name)
+    [SerializeField] string nextDialogueId;
+
+
+
+
+    //За да работи сериализацията използваме вместо конструктор тази функция,работи подобно на конструктор
+    //Тя изпълнява кода след сериализацията на обекта
+    public void OnAfterDeserialize()
     {
-        this.sentence = sentence;
-        this.characterPortrait = characterPortrait;
-        this.name = name;
-        this.id = id;
-        this.nextId = nextId;
-        this.questions = questions;
-        
-        if (questions!=null)
+        //Ако има въпроси в листа, стейта се променя, на има въпрос.
+        if (questions != null && questions.Count > 0)
         {
             questionState = QuestionState.HasQuestion;
         }
@@ -38,16 +53,37 @@ class dialogBoxInfo
         {
             questionState = QuestionState.NoQuestion;
         }
-
     }
-   
+    //Ако трябва да стане нещо преди сериализацията на обекта
+    public void Init(string name,List<Questions>questions,List<string> sentence, Sprite characterPortrait, string thisDialogueId,string nextDialogueId)
+    {
+        this.name = name;
+        this.questions = questions;
+        this.sentence = sentence;
+        this.portrait = characterPortrait;
+        this.thisDialogueId = thisDialogueId;
+        this.nextDialogueId = nextDialogueId;
+        if (questions != null && questions.Count > 0)
+        {
+            questionState = QuestionState.HasQuestion;
+        }
+        else
+        {
+            questionState = QuestionState.NoQuestion;
+        }
+    }
+    public void OnBeforeSerialize()
+    {
+    }
+
+ 
     public string GetName()
     {
         return name;
     }
     public Sprite getCharacterPortrait()
     {
-        return characterPortrait;
+        return portrait;
     }
     public List<string> GetSentence()
     {
@@ -67,12 +103,17 @@ class dialogBoxInfo
     }
     public string GetId()
     {
-        return id;
+        return thisDialogueId;
     }
     public string GetNextId()
     {
-        return nextId;
+        return nextDialogueId;
     }
+    public void SetCharacterName(string characterName)
+    {
+        name = characterName;
+    }
+  
 }
 
 
@@ -81,7 +122,13 @@ public class DialogueManager : MonoBehaviour,IEventHandler<onDialogueQuestionAns
 
     [SerializeField] private bool frezeCharacterDuringDialogue = false;
 
-    Dictionary<string, dialogBoxInfo> dialogueBoxDictionary = new Dictionary<string, dialogBoxInfo>();
+
+    //понеже Unity не може да сериализира речник, пълним диалозите в лист, след което ги слагаме в речник,който диалог системата използва
+    [SerializeField]
+    private List<dialogBoxInfo> dialogueList;
+
+    Dictionary<string, dialogBoxInfo> dialogueBoxDictionary = new Dictionary<string, dialogBoxInfo>();//речник с диалози
+
     private string currentSentence;//сегашно изречение от масива с изречения на един dialogueBox
 
     private string temp ="";//събира сегашното изречение буква по буква
@@ -94,13 +141,13 @@ public class DialogueManager : MonoBehaviour,IEventHandler<onDialogueQuestionAns
     private int currentCharIndx = 0;//сегашен чар на сегашното изречение
     private string currentDialogueKey = " ";//ключ на кой диалог сме
     private int currentDialogueLineIndx = 0;//индекс на коя линия в диалога сме
-    
-   
-    string startKey="normal";
+
+
+    [SerializeField] string startDialogueId;//От кой диалог да започне диалога
     dialogueStates currentState=dialogueStates.inactive;
 
     //EVENTS
-    OnDialogueBoxInfoEvent dialogueNewSentenceEvent = new OnDialogueBoxInfoEvent();
+    OnDialogueBoxInfoEvent dialogueBoxSendInfoEvent = new OnDialogueBoxInfoEvent();
     OnDialogueIndxChangedEvent dialogueIndxChangedEvent = new OnDialogueIndxChangedEvent();
     OnNextLineIndicatorOn onNextLineIndicatorOn = new OnNextLineIndicatorOn();
     OnNextLineIndicatorOff onNextLineIndicatorOff = new OnNextLineIndicatorOff();
@@ -110,39 +157,26 @@ public class DialogueManager : MonoBehaviour,IEventHandler<onDialogueQuestionAns
     OnUnFreezePlayerOnDialogueEnd onPlayerUnFreezePlayerOnDialogueEnd = new OnUnFreezePlayerOnDialogueEnd();
     onSendDialogueQuestions onSendDialogueQuestions = new onSendDialogueQuestions();
     TimerUtil dialogueCharTimer;//CustomTimer
-    dialogBoxInfo a;
-    dialogBoxInfo b;
-    dialogBoxInfo c;
+    
+    //default отговор, който се изпълнява, когато въпрос няма следващо id
+    dialogBoxInfo defaultDialogue;
     string lastKey;
     bool hasAlreadyConversed = false;
     private void Awake()
     {
-        List<string> list1 = new List<string>();
-        list1.Add("AAAAAAAA.\n");
-        list1.Add("<color=#FF0000>DIMOFF</color> ааа\n");
-        list1.Add("MAZNA");
+        
+        //Понеже иснпектора не работи с речник, в инспектора слагаме данните в лист и ги добавяме в речник
+        for(int i = 0;i< dialogueList.Count; i++)
+        {
+            dialogueBoxDictionary.Add(dialogueList[i].GetId(), dialogueList[i]);
+        }
+        defaultDialogue = new dialogBoxInfo();
 
-        List<string> list2 = new List<string>();
-        list2.Add("<size=400%>brrrrrrrrrrrrr.</size>");
-        list2.Add("Losho \n");
-        list2.Add("MAZNA\n");
-        List<string> list3 = new List<string>();
-        list3.Add("Кuchjeto e ok :)");
- 
-        List<Questions> questions = new List<Questions>();
+        List<string> sentence = new List<string>();
+        sentence.Add("...");
+        defaultDialogue.Init("", null, sentence, null, "default","");
+        dialogueBoxDictionary.Add(defaultDialogue.GetId(), defaultDialogue);
 
-        questions.Add(new Questions("Da dog not Fine", "sad"));
-        questions.Add(new Questions("Da dog fine", "happy"));
-        questions.Add(new Questions("Da dog not Fine", "sad"));
-        questions.Add(new Questions("Da dog fine", "happy"));
-
-        a = new dialogBoxInfo("normal", "", list1, questions, null, "Dave");
-        b = new dialogBoxInfo("sad", "", list2, null, null, "Dave tujniq");
-        c = new dialogBoxInfo("happy", "", list3, null, null, "Dave shtastliviq");
-
-        dialogueBoxDictionary[a.GetId()] = a;
-        dialogueBoxDictionary[b.GetId()] = b;
-        dialogueBoxDictionary[c.GetId()] = c;
     }
     private void Start()
     {
@@ -156,18 +190,25 @@ public class DialogueManager : MonoBehaviour,IEventHandler<onDialogueQuestionAns
     {
         if (currentState == dialogueStates.initiazlizeDialogue)
         {
+            //Ако няма диалози не се пуска диалог системата
+            if (dialogueBoxDictionary.Count <= 0)
+            {
+                SetDialogueState(dialogueStates.inactive);
+                print("NO DIALOGUES FOR THIS CHARACTER!!!");
+                return;
+            }
 
-
-            //началният ключ от тук ще започне диалога
+            //Ако вече сме говорили взима последния ключ
             if (!hasAlreadyConversed)
             {
-                currentDialogueKey = startKey;
+                currentDialogueKey = startDialogueId;
                 hasAlreadyConversed = true;
             }
             else
             {
                 currentDialogueKey = lastKey;
             }
+
 
             EventManager.Instance.Publish(onDialogueStartEvent);
             SetDialogueState(dialogueStates.StartCurrDialogue);
@@ -208,12 +249,16 @@ public class DialogueManager : MonoBehaviour,IEventHandler<onDialogueQuestionAns
         {
             closeDialogueState();
         }
-        print(currentState);
-
-        print(currentDialogueKey);
-        if (currentDialogueKey != ""&&lastKey!=currentDialogueKey)
+ 
+        if (currentDialogueKey != "" && lastKey!=currentDialogueKey)
         {
             lastKey = currentDialogueKey;
+        }
+
+
+        if (currentDialogue!=null)
+        {
+            print("CURR Question STATE " + currentDialogue.GetQuestionState());
         }
     }
 
@@ -223,7 +268,7 @@ public class DialogueManager : MonoBehaviour,IEventHandler<onDialogueQuestionAns
         //Когато таймера е верен се изпълнява,което става на всеки currentCharDelay секунди
         //Тук увеличаваме индекса на сегашното изречение, и на всички изречения в dialogueBox, и пращаме индекса наза целия dialogue box,защото
         //ui manager има целия текст от dialogueBox,докато тук обработваме само едно изречение, за да се знае, кога DialogueUI, да прави char visible
-        //Затова се изпраща евент към DialogueII със index на целия dialogueBox
+        //Затова се изпраща евент към DialogueUI със index на целия dialogueBox
 
         //Ако сегашното изречение е свършило минаваме на следващо минаваме на следващата линия в диалога
         
@@ -259,42 +304,67 @@ public class DialogueManager : MonoBehaviour,IEventHandler<onDialogueQuestionAns
          SetDialogueState(dialogueStates.inactive);
 
     }
-
+    //Фунцкията,която се изпълнява след като отговорим на Въпроса
     public void Handle(onDialogueQuestionAnsweredEvent @event)
     {
+
+        if (@event.nextDialogueNode == "default")
+        {
+            //Задаваме името на героя,който ще отговори с default отговора
+            defaultDialogue.SetCharacterName(currentDialogue.GetName());
+            
+        }
      
+  
         //когато отговорим на въпроса сменяме сегашния диалог,сменяме стейта и маркираме,че въпросът е зададен
         currentDialogueKey = @event.nextDialogueNode;
-        print("Event klucha e "+@event.nextDialogueNode);
+        print("Event klucha e " + @event.nextDialogueNode);
+  
         SetDialogueState(dialogueStates.EndCurrDialogue);
         currentDialogue.SetQuestionState(QuestionState.QuestionAlreadyAsked);
     }
+
+    //Tози стейт само ни пренасочва към други стейтове според състоянието на диалога
+    //След като свършим с текста в диалога ни праща тук и диалога прецелява в кой стейт да отиде
     void endCurrentDialogueState()
     {
-        //Tози стейт само ни пренасочва към стейт
-        //Ако има още диалози ни насочва към стейт за диалог, ако не затватя диалога
 
+        //Ако в диалога има изббор
         if (currentDialogue.GetQuestionState() == QuestionState.HasQuestion)
         {
             //Ако има въпрос влизаме в празен стейт,докато чакаме отговор и изпращаме въпросите на DialogueManager
             SetDialogueState(dialogueStates.dialogueQuestionState);
             onSendDialogueQuestions.dialogueQuestions = currentDialogue.GetQuestions();
             EventManager.Instance.Publish(onSendDialogueQuestions);
-        } //Ako има някакъв диалог
-        else if (currentDialogue.GetNextId().Length != 0 || currentDialogue.GetQuestionState() == QuestionState.QuestionAlreadyAsked)
+        } 
+
+
+        //Подготвяне за следващ диалог,разделени са за да има логическо разделяне,когато сме имали избор и когато сме нямали
+
+        //Ako сме имали избор
+        else if (currentDialogue.GetQuestionState() == QuestionState.QuestionAlreadyAsked)
         {
-            //Ако има следващо Id го взима в противен случай, взима диалога избран от играча
-            //запазваме последния ключ диалог
-            if (currentDialogue.GetNextId().Length != 0)
-            {
-                currentDialogueKey = currentDialogue.GetNextId();
-         
-            }
-           
+            //Вече сме взели ключа за диалог от  Handle(onDialogueQuestionAnsweredEvent)
+
+            //подготвяме се за следващ диалог
             currentDialogueLineIndx = 0;
             currentBoxCharIndx = 0;
             SetDialogueState(dialogueStates.StartCurrDialogue);
         }
+        //Гледа ако следващия диалог не е празен значи сме нямали избор
+        else if (currentDialogue.GetNextId().Length != 0)
+        {
+            //Взимаме следващич ключ за диалог 
+            currentDialogueKey = currentDialogue.GetNextId();
+
+
+            //подготвяме се за следващ диалог
+            currentDialogueLineIndx = 0;
+            currentBoxCharIndx = 0;
+            SetDialogueState(dialogueStates.StartCurrDialogue);
+        }
+
+        //Ако няма други диалози затваряме 
         else
         {
             currentDialogueLineIndx = 0;
@@ -309,10 +379,9 @@ public class DialogueManager : MonoBehaviour,IEventHandler<onDialogueQuestionAns
         //Взима се сашния масив с dialogue lines, което държи dialogue object, currentDialogue е dialogue object
         //Изпращаме всички данни за сегашние dialogBox чрез евент и ресетваме charIndx.
         //взимаме сегашния диалог с ключ
+      
+
         currentCharIndx = 0;
-        //Ако сме минали през диалога веднъж ключа ще е празен низ, за това всимаме последния ключ
-        
- 
         currentDialogue = dialogueBoxDictionary[currentDialogueKey];
 
         //Събираме диалога от всички изречения в сегашния dialogueBox
@@ -323,23 +392,23 @@ public class DialogueManager : MonoBehaviour,IEventHandler<onDialogueQuestionAns
         }
        
 
-        dialogueNewSentenceEvent.fullDialogueBoxText = fullDialogueBoxText;
-        dialogueNewSentenceEvent.portrait = currentDialogue.getCharacterPortrait();
-        dialogueNewSentenceEvent.name = currentDialogue.GetName();
+        dialogueBoxSendInfoEvent.fullDialogueBoxText = fullDialogueBoxText;
+        dialogueBoxSendInfoEvent.portrait = currentDialogue.getCharacterPortrait();
+        dialogueBoxSendInfoEvent.name = currentDialogue.GetName();
+        dialogueBoxSendInfoEvent.portrait = currentDialogue.getCharacterPortrait();
 
-
-        EventManager.Instance.Publish(dialogueNewSentenceEvent);
+        EventManager.Instance.Publish(dialogueBoxSendInfoEvent);
         temp = "";
 
-   
  
-        setuiDialogue();
+        setUiDialogue();
 
 
         SetDialogueState(dialogueStates.Typing);
 
     }
-    void setuiDialogue()
+
+    void setUiDialogue()
     {
         //Всеки dialogue бокс има масив с изречения, тук взимаме сегашното,изчистваме го и изпащаме думата
         currentSentence = currentDialogue.GetSentence()[currentDialogueLineIndx];
@@ -362,7 +431,7 @@ public class DialogueManager : MonoBehaviour,IEventHandler<onDialogueQuestionAns
         }
         else if (Input.GetKeyDown(KeyCode.E))
         {
-            setuiDialogue();
+            setUiDialogue();
 
             currentCharIndx = 0;
             SetDialogueState(dialogueStates.Typing);

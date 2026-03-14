@@ -10,6 +10,7 @@ using Game.Core.TimeSystem;
 using NUnit.Framework;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using static PlasticGui.WorkspaceWindow.CodeReview.ReviewChanges.Summary.CommentSummaryData;
 
 namespace Game.Core.GameSystem
@@ -42,6 +43,7 @@ namespace Game.Core.GameSystem
     public class OnNextLineIndicatorOff : GameEvent
     {
     }
+
     public class OnDialogueStartEvent : GameEvent
     {
     }
